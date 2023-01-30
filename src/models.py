@@ -5,17 +5,21 @@ db = SQLAlchemy()
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    name = db.Column(db.String(80), unique=False, nullable=False)
-    surname = db.Column(db.String(80), unique=False, nullable=False)
+    firstname = db.Column(db.String(80), unique=False, nullable=False)
+    lastname = db.Column(db.String(80), unique=False, nullable=False)
+    username = db.Column(db.String(80), unique=False, nullable=False)
+    password = db.Column(db.String(250), nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
 
-    def __repr__(self):
+def __repr__(self):
         return '<User %r>' % self.id
 
-    def serialize(self):
+def serialize(self):
         return {
             "id": self.id,
             "email": self.email,
+            "firstname": self.firstname,
+            "lastname": self.lastname,
             # do not serialize the password, its a security breach
         }
 

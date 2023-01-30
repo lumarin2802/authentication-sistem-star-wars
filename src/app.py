@@ -9,6 +9,12 @@ from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
 from models import db, User, Character, Planet, Vehicle, Favorites
+import json
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import get_jwt_identity
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import JWTManager
+
 #from models import Person
 
 app = Flask(__name__)
@@ -25,6 +31,9 @@ MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
 setup_admin(app)
+
+app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
+jwt = JWTManager(app)
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -114,7 +123,62 @@ def get_info_character(character_id):
     print(character.serialize())
     return jsonify(character.serialize()), 200
 
-    
+##LOGIN
+@app.route("/login", methods=["POST"])
+def login():
+    email = request.json.get("email", None)
+    password = request.json.get("password", None)
+
+    user = User.query.filter_by(email=email).first()
+
+    if email != user.email or password != user.password:
+        return jsonify({"msg": "Bad email or password"}), 401
+
+    access_token = create_access_token(identity=email)
+    return jsonify(access_token=access_token)
+
+
+@app.route("/profile", methods=["GET"])
+@jwt_required()
+def protected():
+    # Access the identity of the current user with get_jwt_identity
+    current_user = get_jwt_identity()
+    user= User.query.filter_by(email=current_user).first()
+
+    response_body = {
+        "msg": "ok",
+        "user": user.serialize()
+    }
+    return jsonify(response_body), 200
+
+#crear usuario
+@app.route("/user", methods=["POST"])
+def add_new_user():
+
+# users = User.query.filter_by(id=user_id).first()
+# print (users.serialize())
+    request_body = json.loads(request.data)
+    print(request_body)
+    allusers = User.query.all()
+
+    usuario = User(email=request_body["email"], password=request_body["password"], username=request_body["username"], name=request_body["name"], surname=request_body["surname"])
+    print(usuario)
+
+    db.session.add(usuario)
+    db.session.commit()
+#     email = request.json.get("email", None)
+#     password = request.json.get("password", None)
+
+#     user = User.query.filter_by(email=email).first()
+
+#     if email != user.email or password != user.password:
+#         return jsonify({"msg": "Bad email or password"}), 401
+
+#     access_token = create_access_token(identity=email)
+#     return jsonify(access_token=access_token)
+
+
+
 #terminan los endpoints
 
 # this only runs if `$ python src/app.py` is executed
